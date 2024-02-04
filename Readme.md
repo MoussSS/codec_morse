@@ -30,6 +30,29 @@ $ gdb-multiarch --tui build/firmware.elf
 (gdb) break main
 (gdb) next # Debug line per line
 ```
+## Epen a debug session with Renode
+```bash
+renode nucleo-f446re.resc
+(machine-0) logFile @/tmp/function-trace.log
+(machine-0) logLevel -1
+(machine-0) machine StartGdbServer 3333
+(machine-0) start
+(machine-0) pause
+(machine-0) sysbus.cpu PC
+(machine-0) sysbus.cpu LogFunctionNames true
+(machine-0) machine GetTimeSourceInfo
+(machine-0) machine EnableProfiler
+(machine-0) quit
+```
+```bash
+$ gdb-multiarch
+(gdb) target extended-remote localhost:3333
+(gdb) file build/firmware.elf
+(gdb) load
+(gdb) monitor start
+(gdb) monitor halt
+(gdb) continue
+```
 
 ## Resources
 - [Baremetal from zero to blink](https://www.linuxembedded.fr/2021/02/bare-metal-from-zero-to-blink)

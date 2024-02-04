@@ -1,0 +1,22 @@
+# Filename: stm32f4.resc
+$BIN?=@build/firmware.elf
+
+# Create Machine & Load config
+mach create
+#machine LoadPlatformDescription @platforms/cpus/stm32f4.repl
+machine LoadPlatformDescription @nucleo-f446re.repl
+
+# Create a terminal window showing the output
+#showAnalyzer sysbus.usart2
+
+#sysbus LogPeripheralAccess sysbus.gpioPortC True
+
+# Enable function tracing
+#sysbus.cpu LogFunctionNames True
+
+macro reset
+"""
+    sysbus LoadELF $BIN
+"""
+
+runMacro $reset
