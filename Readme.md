@@ -12,7 +12,7 @@ arm-none-eabi-gcc -Wall -c main.c -o build/main.o -mcpu=cortex-m4 -mthumb -Og -g
 # Build firmware file from object with linker file
 arm-none-eabi-gcc -T nucleo-f446re.ld -nostdlib build/main.o -o build/firmware.elf
 # Display assembler code
-arm-none-eabi-objdump -d build/firmware.elf
+arm-none-eabi-objdump -D build/firmware.elf
 ```
 ## Flash the firmware
 ```bash
@@ -38,3 +38,4 @@ $ gdb-multiarch --tui build/firmware.elf
 - [From Zero to main(): How to Write a Bootloader from Scratch](https://interrupt.memfault.com/blog/how-to-write-a-bootloader-from-scratch)
 - [From Zero to main(): Bootstrapping libc with Newlib](https://interrupt.memfault.com/blog/boostrapping-libc-with-newlib#from-zero-to-main-bootstrapping-libc-with-newlib)
 - [From Zero to main(): Bare metal Rust](https://interrupt.memfault.com/blog/zero-to-main-rust-1)
+- [STM32 Startup script in C++](https://medium.com/@csrohit/stm32-startup-script-in-c-b01e47c55179)
