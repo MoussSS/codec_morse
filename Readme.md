@@ -4,6 +4,14 @@ For Ubuntu:22.04 version :
 ```bash
 $ sudo apt install gcc-arm-none-eabi gdb-multiarch openocd
 ```
+Renode installation :
+Download the package from Github repository.
+```bash
+mkdir renode_portable
+tar xf renode-*.linux-portable.tar.gz -C renode --strip-components=1
+cd renode_portable
+export PATH="`pwd`:$PATH"
+```
 ## Build the firmware
 ```bash
 mkdir build
