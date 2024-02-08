@@ -8,9 +8,10 @@ $ sudo apt install gcc-arm-none-eabi gdb-multiarch openocd
 ```bash
 mkdir build
 # Compile object file from source code
+arm-none-eabi-gcc -Wall -c startup.c -o build/startup.o -mcpu=cortex-m4 -mthumb -Og -g
 arm-none-eabi-gcc -Wall -c main.c -o build/main.o -mcpu=cortex-m4 -mthumb -Og -g
 # Build firmware file from object with linker file
-arm-none-eabi-gcc -T nucleo-f446re.ld -nostdlib build/main.o -o build/firmware.elf
+arm-none-eabi-gcc -T nucleo-f446re.ld -nostdlib build/startup.o build/main.o -o build/firmware.elf
 # Display assembler code
 arm-none-eabi-objdump -D build/firmware.elf
 ```
@@ -30,7 +31,7 @@ $ gdb-multiarch --tui build/firmware.elf
 (gdb) break main
 (gdb) next # Debug line per line
 ```
-## Epen a debug session with Renode
+## Open a debug session with Renode
 ```bash
 renode nucleo-f446re.resc
 (machine-0) logFile @/tmp/function-trace.log
