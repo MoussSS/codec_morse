@@ -12,6 +12,8 @@
 #define GPIOA_ODR (*(volatile uint32_t *)0x40020014)
 
 int main(void) {
+	/* After reset, the CPU clock frequency is 16MHz */
+
 	RCC_AHB1ENR |= (1 << 0); // Enable periph clock for GPIOA port
 
 	/* GPIOA5 as Output */
@@ -30,8 +32,19 @@ int main(void) {
 	while (1) {
 		/* GPIOA5 set at 0 */
         GPIOA_ODR &= ~(0b1 << 5);
+
+		/* Arbitrary delay */
+		for(uint32_t delay=0; delay < 2000000u; delay++) {
+			asm volatile ("NOP");
+		}
+
 		/* GPIOA5 set at 1 */
         GPIOA_ODR |= (0b1 << 5);
+
+		/* Arbitrary delay */
+		for(uint32_t delay=0; delay < 2000000u; delay++) {
+			asm volatile ("NOP");
+		}
 	}
 
 	return 0;
