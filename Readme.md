@@ -7,52 +7,53 @@ $ sudo apt install cmake gcc-arm-none-eabi gdb-multiarch make
 ```
 Download the package from Openocd github repository (need 0.12.0 version).
 ```bash
-git clone git://git.code.sf.net/p/openocd/code openocd
-cd openocd
-git checkout v0.12.0
-git submodule update --init
-sudo apt install autoconf automake libtool libusb-1.0-0 libusb-1.0-0-dev make pkg-config texinfo
-./bootstrap
-./configure
-make sudo make install
-openocd --version
+$ git clone git://git.code.sf.net/p/openocd/code openocd
+$ cd openocd
+$ git checkout v0.12.0
+$ git submodule update --init
+$ sudo apt install autoconf automake libtool libusb-1.0-0 libusb-1.0-0-dev make pkg-config texinfo
+$ ./bootstrap
+$ ./configure
+$ sudo make install
+$ openocd --version
 ```
 ### Emulator
 Download the package from Renode github repository.
 ```bash
-mkdir renode
-tar xf renode-*.linux-portable.tar.gz -C renode --strip-components=1
-cd renode
-export PATH="`pwd`:$PATH"
-renode --version
+$ mkdir renode
+$ tar xf renode-*.linux-portable.tar.gz -C renode --strip-components=1
+$ cd renode
+$ export PATH="`pwd`:$PATH"
+$ renode --version
+$ pip3 install -r tests/requirements.txt
 ```
 ### SWV Tool
 Download code source from Orbuculum github repository.
 ```bash
-mkdir orbuculum
-sudo apt install libusb-1.0-0 libusb-1.0-0-dev libczmq-dev libelf-dev libcapstone-dev libsdl2-2.0-0 libsdl2-dev libncurses-dev meson ncurses-base ninja-build pkg-config
-tar xf orbuculum-2.1.0.tar.gz -C orbuculum
-cd orbuculum
-meson setup build
-ninja -C build
-export PATH="`pwd`:$PATH"
+$ mkdir orbuculum
+$ sudo apt install libusb-1.0-0 libusb-1.0-0-dev libczmq-dev libelf-dev libcapstone-dev libsdl2-2.0-0 libsdl2-dev libncurses-dev meson ncurses-base ninja-build pkg-config
+$ tar xf orbuculum-2.1.0.tar.gz -C orbuculum
+$ cd orbuculum
+$ meson setup build
+$ ninja -C build
+$ export PATH="`pwd`:$PATH"
 ```
 ## Build the firmware
 ### As Debug
 ```bash
-mkdir build/Debug && cd build/Debug
-cmake ../.. -DCMAKE_BUILD_TYPE=Debug
-cmake --build .
+$ mkdir -p build/Debug && cd build/Debug
+$ cmake ../.. -DCMAKE_BUILD_TYPE=Debug
+$ cmake --build .
 ```
 ### As Release
 ```bash
-mkdir build/Release && cd build/Release
-cmake ../.. -DCMAKE_BUILD_TYPE=Release
-cmake --build .
+$ mkdir -p build/Release && cd build/Release
+$ cmake ../.. -DCMAKE_BUILD_TYPE=Release
+$ cmake --build .
 ```
 ## Display assemble code
 ```bash
-arm-none-eabi-objdump -D bin/firmware_<Debug or Release>.elf
+$ arm-none-eabi-objdump -D bin/firmware_<Debug or Release>.elf
 ```
 ## Flash the firmware
 ```bash
@@ -83,7 +84,7 @@ $ orbtop -s localhost:3443 -e build/firmware_Debug.elf
 ```
 ## Open a debug session with Renode
 ```bash
-renode nucleo-f446re.resc
+$ renode config/nucleo-f446re.resc
 (machine-0) logFile @/tmp/function-trace.log
 (machine-0) logLevel -1
 (machine-0) machine StartGdbServer 3333
@@ -114,6 +115,8 @@ $ gdb-multiarch
 - [From Zero to main(): Bootstrapping libc with Newlib](https://interrupt.memfault.com/blog/boostrapping-libc-with-newlib#from-zero-to-main-bootstrapping-libc-with-newlib)
 - [From Zero to main(): Bare metal Rust](https://interrupt.memfault.com/blog/zero-to-main-rust-1)
 - [STM32 Startup script in C++](https://medium.com/@csrohit/stm32-startup-script-in-c-b01e47c55179)
+### Logic analyzer
+- [Sigrok/Pulseview l'analyseur logique open source](https://linuxembedded.fr/2014/10/sigrokpulseview-lanalyseur-logique-open-source)
 ### SWV
 - [Serial Wire Vewer (SWD + SWO) - fast & native Debugging](https://www.codeinsideout.com/blog/stm32/swv)
 - [Using Single Wire Output SWO with ARM Cortex-M and Eclipse](https://mcuoneclipse.com/2016/10/17/tutorial-using-single-wire-output-swo-with-arm-cortex-m-and-eclipse)
