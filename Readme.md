@@ -105,7 +105,13 @@ $ gdb-multiarch
 (gdb) monitor halt
 (gdb) continue
 ```
-
+## Build test suite
+```bash
+$ mkdir -p build/Test && cd build/Test
+$ cmake ../.. -DCMAKE_BUILD_TYPE=Test
+$ cmake --build .
+$ ctest -V
+```
 ## Resources
 ### Start from scratch
 - [Baremetal from zero to blink](https://www.linuxembedded.fr/2021/02/bare-metal-from-zero-to-blink)

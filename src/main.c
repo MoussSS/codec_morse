@@ -1,50 +1,28 @@
 #include <stdint.h>
+#include "main.h"
+
+#ifndef UTEST
+#include "user_led.h"
+#include "delay.h"
+#else
+#include "mock_user_led.h"
+#include "mock_delay.h"
+#endif
 
 /* Blink User Led on Nucleo-f446re board
  * User Led = GPIOA5
  */
-#define RCC_AHB1ENR (*(volatile uint32_t *)0x40023830)
+int MAIN(void) {
 
-#define GPIOA_MODER (*(volatile uint32_t *)0x40020000)
-#define GPIOA_OTYPER (*(volatile uint32_t *)0x40020004)
-#define GPIOA_OSPEEDR (*(volatile uint32_t *)0x40020008)
-#define GPIOA_PUPDR (*(volatile uint32_t *)0x4002000C)
-#define GPIOA_ODR (*(volatile uint32_t *)0x40020014)
-
-int main(void) {
 	/* After reset, the CPU clock frequency is 16MHz */
 
-	RCC_AHB1ENR |= (1 << 0); // Enable periph clock for GPIOA port
+	userLed_setup();
 
-	/* GPIOA5 as Output */
-	GPIOA_MODER &= ~(0b11 << 10); // Reset configuration mode for pin 5
-	GPIOA_MODER |= (0b01 << 10); // Set Output mode for pin 5
-
-	/* GPIOA5 on Push-Pull */
-	GPIOA_OTYPER &= ~(0b1 << 5);
-
-	/* GPIOA5 on Low speed */
-	GPIOA_OSPEEDR &= ~(0b11 << 10);
-
-	/* GPIOA5 on No pull-up/pull-down */
-	GPIOA_PUPDR &= ~(0b11 << 10);
-
-	while (1) {
-		/* GPIOA5 set at 0 */
-        GPIOA_ODR &= ~(0b1 << 5);
-
-		/* Arbitrary delay */
-		for(uint32_t delay=0; delay < 2000000u; delay++) {
-			asm volatile ("NOP");
-		}
-
-		/* GPIOA5 set at 1 */
-        GPIOA_ODR |= (0b1 << 5);
-
-		/* Arbitrary delay */
-		for(uint32_t delay=0; delay < 2000000u; delay++) {
-			asm volatile ("NOP");
-		}
+	LOOP {
+		userLed_set(USER_LED_STATE_OFF);
+		delay_ms(500u);
+        userLed_set(USER_LED_STATE_ON);
+		delay_ms(500u);
 	}
 
 	return 0;
