@@ -3,7 +3,7 @@
 Test on Ubuntu 22.04 distribution.
 ### Toolchain
 ```bash
-$ sudo apt install cmake gcc-arm-none-eabi gdb-multiarch make
+$ sudo apt install cmake gcc-arm-none-eabi gdb-multiarch lcov make
 ```
 Download the package from Openocd github repository (need 0.12.0 version).
 ```bash
@@ -30,7 +30,7 @@ $ mkdir -p build/Release && cd build/Release
 $ cmake ../.. -DCMAKE_BUILD_TYPE=Release
 $ cmake --build .
 ```
-## Display assemble code
+## Display assembler code
 ```bash
 $ arm-none-eabi-objdump -D bin/firmware_<Debug or Release>.elf
 ```
@@ -56,5 +56,11 @@ $ gdb-multiarch --tui build/firmware_Debug.elf
 $ mkdir -p build/Test && cd build/Test
 $ cmake ../.. -DCMAKE_BUILD_TYPE=Test
 $ cmake --build .
-$ ctest -V
+$ ctest -V # Run all tests with verbose output
+```
+## Show code coverage
+Need build test suite before code coverage generation.
+```bash
+$ cd build/Test
+$ cmake --build . --target coverage # Generate code coverage report
 ```
