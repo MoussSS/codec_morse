@@ -1,3 +1,5 @@
 # Ignore files by git
 build/*
 bin/*
+test/functional/__pycache__
+test/functional/.pytest_cache
