@@ -65,10 +65,10 @@ SECTIONS
     .stack (NOLOAD):
     {
         . = ALIGN(8);
+        PROVIDE(end = .);
+        PROVIDE(_end = .);
         . = . + STACK_SIZE;
         . = . + HEAP_SIZE;
         . = ALIGN(8);
     } > RAM
-
-    _end = .;
 }

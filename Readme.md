@@ -3,7 +3,15 @@
 Test on Ubuntu 22.04 distribution.
 ### Toolchain
 ```bash
-$ sudo apt install cmake gcc-arm-none-eabi gdb-multiarch lcov make
+$ sudo apt install build-essential cmake gdb-multiarch lcov make
+```
+Download the package from [ARM-Website](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (need 13.2rel1 version).
+```bash
+$ tar -xf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
+$ arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin
+$ echo export PATH="\$PATH:arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin" >> .bashrc
+$ source ./bashrc
+$ arm-none-eabi-gcc --version
 ```
 Download the package from Openocd github repository (need 0.12.0 version).
 ```bash

@@ -14,6 +14,8 @@ target_compile_options(${BUILD_TARGET} PRIVATE
 
 target_link_options(${BUILD_TARGET} PRIVATE
     -T${LINKER_FILE}
+    --specs=nosys.specs
+    --specs=nano.specs
     -Wl,-Map=output.map,--cref
     -Wl,--print-memory-usage
 )
