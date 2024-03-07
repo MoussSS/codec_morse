@@ -26,17 +26,10 @@ $ sudo make install
 $ openocd --version
 ```
 ## Build the firmware
-### As Debug
 ```bash
-$ mkdir -p build/Debug && cd build/Debug
-$ cmake ../.. -DCMAKE_BUILD_TYPE=Debug
-$ cmake --build .
-```
-### As Release
-```bash
-$ mkdir -p build/Release && cd build/Release
-$ cmake ../.. -DCMAKE_BUILD_TYPE=Release
-$ cmake --build .
+$ cmake -B build/<Debug or Release> -DCMAKE_BUILD_TYPE=<Debug or Release> # Create workspace
+$ cmake --build build/<Debug or Release> # Build
+$ cmake --build build/<Debug or Release> -t clean # Clean
 ```
 ## Display assembler code
 ```bash
@@ -61,14 +54,12 @@ $ gdb-multiarch --tui build/firmware_Debug.elf
 ```
 ## Build test suite
 ```bash
-$ mkdir -p build/Test && cd build/Test
-$ cmake ../.. -DCMAKE_BUILD_TYPE=Test
-$ cmake --build .
-$ ctest -V # Run all tests with verbose output
+$ cmake -B build/Test -DCMAKE_BUILD_TYPE=Test
+$ cmake --build build/Test
+$ ctest -V --test-dir build/Test # Run all tests with verbose output
 ```
 ## Show code coverage
 Need build test suite before code coverage generation.
 ```bash
-$ cd build/Test
-$ cmake --build . --target coverage # Generate code coverage report
+$ cmake --build build/Test --target coverage # Generate code coverage report
 ```
