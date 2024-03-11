@@ -14,12 +14,18 @@ extern uint32_t _la_data;
 extern uint32_t _sbss;
 extern uint32_t _ebss;
 
+uint32_t volatile systick_counter = 0;
+
 void Reset_Handler(void);
 void NMI_Handler(void);
 void HardFault_Handler(void);
 void MemManage_Handler(void);
 void BusFault_Handler(void);
 void UsageFault_Handler(void);
+void SVC_Handler(void);
+void DebugMon_Handler(void);
+void PendSV_Handler(void);
+void SysTick_Handler(void);
 
 uint32_t vectors[] __attribute__((section(".isr_vector"))) = {
     (uint32_t)STACK_START,
@@ -33,6 +39,11 @@ uint32_t vectors[] __attribute__((section(".isr_vector"))) = {
 	(uint32_t) 0, // reserved
 	(uint32_t) 0, // reserved
 	(uint32_t) 0, // reserved
+	(uint32_t) &SVC_Handler,
+	(uint32_t) &DebugMon_Handler,
+	(uint32_t) 0, // reserved
+	(uint32_t) &PendSV_Handler,
+	(uint32_t) &SysTick_Handler,
 };
 
 void Reset_Handler(void) {
@@ -73,4 +84,20 @@ void BusFault_Handler(void) {
 
 void UsageFault_Handler(void) {
 	while(1);
+}
+
+void SVC_Handler(void) {
+	while(1);
+}
+
+void DebugMon_Handler(void) {
+	while(1);
+}
+
+void PendSV_Handler(void) {
+	while(1);
+}
+
+void SysTick_Handler(void) {
+	systick_counter++;
 }
