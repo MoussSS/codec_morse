@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <cmocka.h>
 
-#include "../../src/user_led.h"
+#include "led.h"
 
 typedef struct { 
   volatile uint32_t MODER;

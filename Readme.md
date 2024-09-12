@@ -1,65 +1,51 @@
 # Nucleo-F446RE-From-Scratch
 ## Prerequisites
-Test on Ubuntu 22.04 distribution.
-### Toolchain
+Docker installed on your computer.
 ```bash
-$ sudo apt install build-essential cmake gdb-multiarch lcov make
-```
-Download the package from [ARM-Website](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (need 13.2rel1 version).
-```bash
-$ tar -xf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
-$ arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin
-$ echo export PATH="\$PATH:arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin" >> .bashrc
-$ source ./bashrc
-$ arm-none-eabi-gcc --version
-```
-Download the package from Openocd github repository (need 0.12.0 version).
-```bash
-$ git clone git://git.code.sf.net/p/openocd/code openocd
-$ cd openocd
-$ git checkout v0.12.0
-$ git submodule update --init
-$ sudo apt install autoconf automake libtool libusb-1.0-0 libusb-1.0-0-dev make pkg-config texinfo
-$ ./bootstrap
-$ ./configure
-$ sudo make install
-$ openocd --version
+$ docker build -t nucleo-f446re-from-scratch .
+$ docker run -it --rm -v $(pwd):/home/user/workspace nucleo-f446re-from-scratch
 ```
 ## Build the firmware
+On the docker
 ```bash
-$ cmake -B build/<Debug or Release> -DCMAKE_BUILD_TYPE=<Debug or Release> # Create workspace
-$ cmake --build build/<Debug or Release> # Build
-$ cmake --build build/<Debug or Release> -t clean # Clean
+$ cmake -B build/<debug or release> -DCMAKE_BUILD_TYPE=<debug or release> # Create workspace
+$ cmake --build build/<debug or release> # Build
+$ rm -rf build/<debug or release> # Clean with removing folder
 ```
-## Display assembler code
+## Run the firmware
+On the target connected by ST-Link:
 ```bash
-$ arm-none-eabi-objdump -D bin/firmware_<Debug or Release>.elf
+$ openocd -f config/stm32f446retx.cfg -c "setup" -c "program_release <firmware file>"
 ```
-## Flash the firmware
+On the emulator:
 ```bash
-$ openocd -f config/nucleo-f446re.cfg -c "setup" -c "program_release bin/firmware_<Debug or release>.elf"
+$
 ```
 ## Open a debug session
 ```bash
-$ openocd -f config/nucleo-f446re.cfg -c "setup" -c "program_debug bin/firmware_Debug.elf"
+$ openocd -f config/stm32f446retx.cfg -c "setup" -c "program_debug <firmware file>"
 ```
 ```bash
-$ gdb-multiarch --tui build/firmware_Debug.elf
+$ gdb-multiarch --tui <firmware file>
 (gdb) target extended-remote localhost:3333
 (gdb) monitor reset halt
 (gdb) load
 (gdb) break main
-(gdb) next # Debug line per line
 (gdb) continue
+```
+If you want use the emulator, need to launch this command:
+```bash
+$ renode --disable-gui config/nucleo-f446re.resc & # Launch Renode on background
+
+$ kill %1 # Stop backgroung process
 ```
 ## Build test suite
 ```bash
-$ cmake -B build/Test -DCMAKE_BUILD_TYPE=Test
-$ cmake --build build/Test
-$ ctest -V --test-dir build/Test # Run all tests with verbose output
+$ cmake -B build/test -DCMAKE_BUILD_TYPE=test
+$ cmake --build build/test
+$ ctest -V --test-dir build/test # Run all tests with verbose output
 ```
-## Show code coverage
-Need build test suite before code coverage generation.
+## Display assembler code
 ```bash
-$ cmake --build build/Test --target coverage # Generate code coverage report
+$ arm-none-eabi-objdump -D <firmware file>
 ```
