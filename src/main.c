@@ -140,7 +140,10 @@ int main(void) {
 	GPIOA.ODR |= (0b1 << 5);
 
 	while(1) {
-		// empty
+		for(uint32_t i=0; i < 16000000/12; i++) {
+			// Active wait around 0.5 second
+		}
+		GPIOA.ODR ^= (0b1 << 5);
 	}
 
 	return 0;
