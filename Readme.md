@@ -15,7 +15,7 @@ $ rm -rf build/<debug or release> # Clean with removing folder
 ## Run the firmware
 On the target connected by ST-Link:
 ```bash
-$ openocd -f config/stm32f446retx.cfg -c "setup" -c "program_release <firmware file>"
+$ openocd -f config/stm32f446retx.cfg -c "setup stm32f4x" -c "program_release <firmware file>"
 ```
 On the emulator:
 ```bash
@@ -23,7 +23,7 @@ $
 ```
 ## Open a debug session
 ```bash
-$ openocd -f config/stm32f446retx.cfg -c "setup" -c "program_debug <firmware file>"
+$ openocd -f config/stm32f446retx.cfg -c "setup stm32f4x" -c "program_debug <firmware file>"
 ```
 ```bash
 $ gdb-multiarch --tui <firmware file>
