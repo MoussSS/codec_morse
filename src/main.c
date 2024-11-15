@@ -30,6 +30,7 @@ void SysTick_Handler(void);
 void TIM2_Handler(void);
 
 int main(void);
+void main_loop(void);
 
 #define RCC_AHB1ENR (*(volatile uint32_t *)0x40023830)
 #define RCC_APB1ENR (*(volatile uint32_t *)0x40023840)
@@ -46,8 +47,6 @@ int main(void);
 #define TIM2_CNT (*(volatile uint32_t*)(TIM2_BASE + 0x24))
 #define TIM2_PSC (*(volatile uint32_t*)(TIM2_BASE + 0x28))
 #define TIM2_ARR (*(volatile uint32_t*)(TIM2_BASE + 0x2C))
-
-#define TIMER_TICKS_IN_MS (250)
 
 
 uint32_t vectors[] __attribute__((section(".isr_vector"))) = { // See reference manual §10 - p239
@@ -178,30 +177,30 @@ int main(void) {
 	RCC_AHB1ENR |= (0b1 << 0); // Enable periph clock for GPIOA port
 	RCC_APB1ENR |= (0b1 << 0); // Enable periph clock for TIM2 port
 
-	/* GPIOA5 as Output */
-	GPIOA.MODER &= ~(0b11 << 10); // Reset configuration mode for pin 5
-	GPIOA.MODER |= (0b01 << 10); // Set Output mode for pin 5
+	/* GPIO A5 & A6 as Output */
+	GPIOA.MODER &= ~(0b1111 << 10); // Reset configuration mode for pin 5
+	GPIOA.MODER |= (0b0101 << 10); // Set Output mode for pin 5
 
-	/* GPIOA5 on Push-Pull */
-	GPIOA.OTYPER &= ~(0b1 << 5);
+	/* GPIO A5 & A6 on Push-Pull */
+	GPIOA.OTYPER &= ~(0b11 << 5);
 
-	/* GPIOA5 on Low speed */
-	GPIOA.OSPEEDR &= ~(0b11 << 10);
+	/* GPIO A5 & A6 on Low speed */
+	GPIOA.OSPEEDR &= ~(0b1111 << 10);
 
-	/* GPIOA5 on No pull-up/pull-down */
-	GPIOA.PUPDR &= ~(0b11 << 10);
+	/* GPIO A5 & A6 on No pull-up/pull-down */
+	GPIOA.PUPDR &= ~(0b1111 << 10);
 
-	/* GPIOA5 set to 0 */
-	GPIOA.ODR &= ~(0b1 << 5);
+	/* GPIO A5 & A6 set to 0 */
+	GPIOA.ODR &= ~(0b11 << 5);
 
 	/* GPIOA5 set to 1 */
 	//GPIOA.ODR |= (0b1 << 5);
 
 	/* Set prescaler on 16 bits */
-	TIM2_PSC = 16000 - 1; /* Ticks timer at 1 ms */
+	TIM2_PSC = 80 - 1; /* Ticks timer at 5 µs */
 
 	/* Set auto-reload */
-	TIM2_ARR = TIMER_TICKS_IN_MS - 1;
+	TIM2_ARR = 2000 - 1; // 2000 * 5 µs => 10 ms
 
 	//TIM2_SMCR = 0x0; Default value so not needed
 
@@ -217,8 +216,22 @@ int main(void) {
 	while(1) {
 		while (!main_loop_sync_received);
 		main_loop_sync_received = false;
-		GPIOA.ODR ^= (0b1 << 5);
+        GPIOA.ODR ^= (0b1 << 6);  // Toggle main loop heart beat
+		main_loop();
 	}
 
 	return 0;
+}
+
+static uint16_t toggle_cycle_counter = 0;
+#define TOGGLE_NB_OF_CYCLE 25
+
+/* Main loop (100Hz) */
+void main_loop(void) {
+	if (toggle_cycle_counter < (TOGGLE_NB_OF_CYCLE - 1)) {
+        toggle_cycle_counter++;
+	} else {
+        GPIOA.ODR ^= (0b1 << 5);
+        toggle_cycle_counter = 0;
+	}
 }
