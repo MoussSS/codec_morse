@@ -113,12 +113,24 @@ typedef struct {
 } gpio_s;
 
 #define RCC_AHB1ENR (*(volatile uint32_t *)0x40023830)
+#define RCC_APB1ENR (*(volatile uint32_t *)0x40023840)
 #define GPIOA (*(gpio_s*)(0x40020000))
+
+#define TIM2_BASE (0x40000000)
+#define TIM2_CR1 (*(volatile uint32_t*)(TIM2_BASE + 0x00))
+#define TIM2_SMCR (*(volatile uint32_t*)(TIM2_BASE + 0x08))
+#define TIM2_SR (*(volatile uint32_t*)(TIM2_BASE + 0x10))
+#define TIM2_CNT (*(volatile uint32_t*)(TIM2_BASE + 0x24))
+#define TIM2_PSC (*(volatile uint32_t*)(TIM2_BASE + 0x28))
+#define TIM2_ARR (*(volatile uint32_t*)(TIM2_BASE + 0x2C))
+
+#define TIMER_TICKS_IN_MS (250)
 
 int main(void) {
 	/* After reset, the CPU clock frequency is 16MHz */
 
 	RCC_AHB1ENR |= (0b1 << 0); // Enable periph clock for GPIOA port
+	RCC_APB1ENR |= (0b1 << 0); // Enable periph clock for TIM2 port
 
 	/* GPIOA5 as Output */
 	GPIOA.MODER &= ~(0b11 << 10); // Reset configuration mode for pin 5
@@ -137,13 +149,25 @@ int main(void) {
 	GPIOA.ODR &= ~(0b1 << 5);
 
 	/* GPIOA5 set to 1 */
-	GPIOA.ODR |= (0b1 << 5);
+	//GPIOA.ODR |= (0b1 << 5);
+
+	/* Set prescaler on 16 bits */
+	TIM2_PSC = 16000 - 1; /* Ticks timer at 1 ms */
+
+	/* Set auto-reload */
+	TIM2_ARR = TIMER_TICKS_IN_MS - 1;
+
+	//TIM2_SMCR = 0x0; Default value so not needed
+
+	/* Set bit 2 (URS) and 0 (EN) at 1
+	*  Todo MOUSS: Add register description
+	*/
+	TIM2_CR1 = 0x5;
 
 	while(1) {
-		for(uint32_t i=0; i < 16000000/12; i++) {
-			// Active wait around 0.5 second
-		}
+		while((TIM2_SR & 0x1) == 0x0); /* Wait UIF */
 		GPIOA.ODR ^= (0b1 << 5);
+		TIM2_SR &= ~(0b1); /* Clear UIF flag */
 	}
 
 	return 0;
