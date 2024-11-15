@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #define RAM_START 0x20000000u
 #define RAM_SIZE (128u * 1024u) // 128K
@@ -13,7 +14,8 @@ extern uint32_t _la_data;
 extern uint32_t _sbss;
 extern uint32_t _ebss;
 
-uint32_t volatile systick_counter = 0;
+static volatile uint32_t systick_counter = 0;
+static volatile bool main_loop_sync_received = false;
 
 void Reset_Handler(void);
 void NMI_Handler(void);
@@ -25,26 +27,78 @@ void SVC_Handler(void);
 void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
+void TIM2_Handler(void);
 
 int main(void);
 
-uint32_t vectors[] __attribute__((section(".isr_vector"))) = {
-    (uint32_t)STACK_START,
+#define RCC_AHB1ENR (*(volatile uint32_t *)0x40023830)
+#define RCC_APB1ENR (*(volatile uint32_t *)0x40023840)
+#define GPIOA (*(gpio_s*)(0x40020000))
+
+#define NVIC_ISER (*(volatile uint32_t *)0xE000E100)
+
+
+#define TIM2_BASE (0x40000000)
+#define TIM2_CR1 (*(volatile uint32_t*)(TIM2_BASE + 0x00))
+#define TIM2_SMCR (*(volatile uint32_t*)(TIM2_BASE + 0x08))
+#define TIM2_DIER (*(volatile uint32_t*)(TIM2_BASE + 0x0C))
+#define TIM2_SR (*(volatile uint32_t*)(TIM2_BASE + 0x10))
+#define TIM2_CNT (*(volatile uint32_t*)(TIM2_BASE + 0x24))
+#define TIM2_PSC (*(volatile uint32_t*)(TIM2_BASE + 0x28))
+#define TIM2_ARR (*(volatile uint32_t*)(TIM2_BASE + 0x2C))
+
+#define TIMER_TICKS_IN_MS (250)
+
+
+uint32_t vectors[] __attribute__((section(".isr_vector"))) = { // See reference manual §10 - p239
+    (uint32_t) STACK_START,          // 0x0000 0000
     (uint32_t) &Reset_Handler,
     (uint32_t) &NMI_Handler,
     (uint32_t) &HardFault_Handler,
-    (uint32_t) &MemManage_Handler,
+    (uint32_t) &MemManage_Handler,   // 0x0000 0010
     (uint32_t) &BusFault_Handler,
     (uint32_t) &UsageFault_Handler,
     (uint32_t) 0, // reserved
-	(uint32_t) 0, // reserved
-	(uint32_t) 0, // reserved
-	(uint32_t) 0, // reserved
-	(uint32_t) &SVC_Handler,
-	(uint32_t) &DebugMon_Handler,
-	(uint32_t) 0, // reserved
-	(uint32_t) &PendSV_Handler,
-	(uint32_t) &SysTick_Handler,
+    (uint32_t) 0, // reserved        // 0x0000 0020
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) &SVC_Handler,
+    (uint32_t) &DebugMon_Handler,    // 0x0000 0030
+    (uint32_t) 0, // reserved
+    (uint32_t) &PendSV_Handler,
+    (uint32_t) &SysTick_Handler,
+    (uint32_t) 0, // reserved        // 0x0000 0040
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved        // 0x0000 0050
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved        // 0x0000 0060
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved        // 0x0000 0070
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved        // 0x0000 0080
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved        // 0x0000 0090
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved        // 0x0000 00A0
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) &TIM2_Handler,        // 0x0000 00B0
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
+    (uint32_t) 0, // reserved
 };
 
 void Reset_Handler(void) {
@@ -103,6 +157,11 @@ void SysTick_Handler(void) {
 	systick_counter++;
 }
 
+void TIM2_Handler(void) {
+	TIM2_SR &= ~(0b1); /* Clear UIF flag */
+	main_loop_sync_received = true;
+}
+
 typedef struct { 
   volatile uint32_t MODER;
   volatile uint32_t OTYPER;
@@ -112,21 +171,8 @@ typedef struct {
   volatile uint32_t ODR; 
 } gpio_s;
 
-#define RCC_AHB1ENR (*(volatile uint32_t *)0x40023830)
-#define RCC_APB1ENR (*(volatile uint32_t *)0x40023840)
-#define GPIOA (*(gpio_s*)(0x40020000))
-
-#define TIM2_BASE (0x40000000)
-#define TIM2_CR1 (*(volatile uint32_t*)(TIM2_BASE + 0x00))
-#define TIM2_SMCR (*(volatile uint32_t*)(TIM2_BASE + 0x08))
-#define TIM2_SR (*(volatile uint32_t*)(TIM2_BASE + 0x10))
-#define TIM2_CNT (*(volatile uint32_t*)(TIM2_BASE + 0x24))
-#define TIM2_PSC (*(volatile uint32_t*)(TIM2_BASE + 0x28))
-#define TIM2_ARR (*(volatile uint32_t*)(TIM2_BASE + 0x2C))
-
-#define TIMER_TICKS_IN_MS (250)
-
 int main(void) {
+
 	/* After reset, the CPU clock frequency is 16MHz */
 
 	RCC_AHB1ENR |= (0b1 << 0); // Enable periph clock for GPIOA port
@@ -159,15 +205,19 @@ int main(void) {
 
 	//TIM2_SMCR = 0x0; Default value so not needed
 
+    //Enable timer interrupt
+    TIM2_DIER = 0x01;
+    NVIC_ISER = 0x10000000; // Unmask IRQ 28 (TIM2)
+
 	/* Set bit 2 (URS) and 0 (EN) at 1
 	*  Todo MOUSS: Add register description
 	*/
 	TIM2_CR1 = 0x5;
 
 	while(1) {
-		while((TIM2_SR & 0x1) == 0x0); /* Wait UIF */
+		while (!main_loop_sync_received);
+		main_loop_sync_received = false;
 		GPIOA.ODR ^= (0b1 << 5);
-		TIM2_SR &= ~(0b1); /* Clear UIF flag */
 	}
 
 	return 0;
