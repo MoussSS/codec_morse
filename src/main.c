@@ -48,6 +48,11 @@ void main_loop(void);
 #define TIM2_PSC (*(volatile uint32_t*)(TIM2_BASE + 0x28))
 #define TIM2_ARR (*(volatile uint32_t*)(TIM2_BASE + 0x2C))
 
+#define USART2_BASE (0x40004400)
+#define USART2_SR (*(volatile uint32_t*)(USART2_BASE + 0x00))
+#define USART2_DR (*(volatile uint32_t*)(USART2_BASE + 0x04))
+#define USART2_BRR (*(volatile uint32_t*)(USART2_BASE + 0x08))
+#define USART2_CR1 (*(volatile uint32_t*)(USART2_BASE + 0x0C))
 
 uint32_t vectors[] __attribute__((section(".isr_vector"))) = { // See reference manual §10 - p239
     (uint32_t) STACK_START,          // 0x0000 0000
@@ -168,6 +173,9 @@ typedef struct {
   volatile uint32_t PUPDR;
   volatile uint32_t IDR;
   volatile uint32_t ODR; 
+  volatile uint32_t unused1; 
+  volatile uint32_t unused2; 
+  volatile uint32_t AFRL; 
 } gpio_s;
 
 int main(void) {
@@ -213,6 +221,23 @@ int main(void) {
 	*/
 	TIM2_CR1 = 0x5;
 
+    /* Init RX USART2
+     * RX => PA3
+     * TX => PA2
+     */
+    RCC_APB1ENR |= (0b1 << 17); // Enable periph clock for USART2 port
+
+	/* GPIO A2 & A3 as alternate function */
+	GPIOA.MODER &= ~(0b1111 << 4); // Reset configuration mode for pin PA2 & PA3
+	GPIOA.MODER |= (0b1010 << 4);  // Set alternate function for PA2 and PA3
+
+    /* Map alternate function on USART2 */
+    GPIOA.AFRL &= ~(0xFF << 8);
+    GPIOA.AFRL |= (0x77 << 8);
+
+    USART2_CR1 = 0x200C;
+    USART2_BRR = 0x8B; // 115 107.9
+
 	while(1) {
 		while (!main_loop_sync_received);
 		main_loop_sync_received = false;
@@ -232,6 +257,7 @@ void main_loop(void) {
         toggle_cycle_counter++;
 	} else {
         GPIOA.ODR ^= (0b1 << 5);
+        USART2_DR = 'a';
         toggle_cycle_counter = 0;
 	}
 }
