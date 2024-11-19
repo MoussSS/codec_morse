@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include "morse.h"
 
 #define RAM_START 0x20000000u
 #define RAM_SIZE (128u * 1024u) // 128K
@@ -31,6 +32,8 @@ void TIM2_Handler(void);
 
 int main(void);
 void main_loop(void);
+
+void set_morse_signal(bool is_on);
 
 #define RCC_AHB1ENR (*(volatile uint32_t *)0x40023830)
 #define RCC_APB1ENR (*(volatile uint32_t *)0x40023840)
@@ -256,8 +259,16 @@ void main_loop(void) {
 	if (toggle_cycle_counter < (TOGGLE_NB_OF_CYCLE - 1)) {
         toggle_cycle_counter++;
 	} else {
-        GPIOA.ODR ^= (0b1 << 5);
+        //GPIOA.ODR ^= (0b1 << 5);
         USART2_DR = 'a';
         toggle_cycle_counter = 0;
 	}
+    encode_morse_message();
+}
+
+void set_morse_signal(bool is_on) {
+    uint32_t data = GPIOA.ODR & ~(0b1 << 5);
+    if (is_on)
+        data |= (0b1 << 5);
+    GPIOA.ODR = data;
 }

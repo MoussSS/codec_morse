@@ -4,6 +4,7 @@ add_executable(${BUILD_TARGET})
 
 target_sources(${BUILD_TARGET} PRIVATE
     main.c
+    morse.c
 )
 
 target_compile_options(${BUILD_TARGET} PRIVATE
