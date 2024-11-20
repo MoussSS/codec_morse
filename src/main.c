@@ -253,6 +253,7 @@ int main(void) {
 
 static uint16_t toggle_cycle_counter = 0;
 #define TOGGLE_NB_OF_CYCLE 25
+static char uart_char = 'a';
 
 /* Main loop (100Hz) */
 void main_loop(void) {
@@ -260,9 +261,13 @@ void main_loop(void) {
         toggle_cycle_counter++;
 	} else {
         //GPIOA.ODR ^= (0b1 << 5);
-        USART2_DR = 'a';
+        USART2_DR = uart_char;
         toggle_cycle_counter = 0;
 	}
+    if ((USART2_SR & 0x20) != 0x0) {
+        uart_char = USART2_DR;
+        push_character(uart_char);
+    }
     encode_morse_message();
 }
 

@@ -124,14 +124,29 @@ static bool send_character (char char_to_send) {
     return encode_morse_data();
 }
 
-static char message[] = "GROS CAca Boudin";
-static uint8_t char_index = 0;
+#define MESSAGE_BUFFER_SIZE 250
+static char buffer[MESSAGE_BUFFER_SIZE];
+static uint8_t last_char_index = 0;
+static uint8_t current_char_index = 0;
+
+static uint8_t increment_circular_index(uint8_t index, uint8_t size) {
+    uint8_t incremented_index = index + 1;
+    if (incremented_index >= size) {
+        incremented_index = 0;
+    }
+    return incremented_index;
+}
+
+void push_character(char pushed_char) {
+    buffer[last_char_index] = pushed_char;
+    last_char_index = increment_circular_index(last_char_index, MESSAGE_BUFFER_SIZE);
+}
 
 void encode_morse_message(void) {
     bool busy;
    
     if (send_char) {
-        busy = send_character(message[char_index]);
+        busy = send_character(buffer[current_char_index]);
     } else {
         busy = encode_morse_blank();
     }
@@ -139,15 +154,15 @@ void encode_morse_message(void) {
     if (!busy) {
         if (send_char) {
             send_char = false;
-            char_index++;
-            if (message[char_index] == ' ') {
+            current_char_index = increment_circular_index(current_char_index, MESSAGE_BUFFER_SIZE);
+            if (buffer[current_char_index] == ' ') {
                 signal_duration = SPACE_BETWEEN_WORDS_NB_OF_CYCLE;
-                char_index++;
+                current_char_index = increment_circular_index(current_char_index, MESSAGE_BUFFER_SIZE);
             } else {
                 signal_duration = SPACE_BETWEEN_LETTERS_NB_OF_CYCLE;
              }
         } else {
-            if (message[char_index] != 0)
+            if (current_char_index != last_char_index)
                 send_char = true;
         }
     }
