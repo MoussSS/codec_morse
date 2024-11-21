@@ -1,10 +1,9 @@
-#include <stdint.h>
-#include <stdbool.h>
 #include "morse.h"
 
+
+/* CONSTANTS */
 #define TIME_TO_CYCLE_FACTOR 10
 #define MORSE_REFERENCE_DURATION_MS 150
-#define MAX_PART_IN_CHARACTER 5
 
 static const uint8_t DOT_NB_OF_CYCLE = MORSE_REFERENCE_DURATION_MS / TIME_TO_CYCLE_FACTOR;
 static const uint8_t DASH_NB_OF_CYCLE = DOT_NB_OF_CYCLE * 3;
@@ -12,20 +11,7 @@ static const uint8_t SPACE_BETWEEN_PARTS_NB_OF_CYCLE = DOT_NB_OF_CYCLE;
 static const uint8_t SPACE_BETWEEN_LETTERS_NB_OF_CYCLE = DOT_NB_OF_CYCLE * 3;
 static const uint8_t SPACE_BETWEEN_WORDS_NB_OF_CYCLE = DOT_NB_OF_CYCLE * 7;
 
-static uint8_t cycle = 0;
-static uint8_t step = 0;
-
-typedef enum {
-    DOT  = 0,
-    DASH = 1
-} morse_part_e;
-
-typedef struct {
-    uint8_t nb_of_part;
-    morse_part_e char_parts[MAX_PART_IN_CHARACTER];
-} encoded_char_s;
-
-const encoded_char_s ENCODED_NUMBERS[10] = {
+const encoded_char_t ENCODED_NUMBERS[10] = {
     {5, {DASH, DASH, DASH, DASH, DASH}},  // 0
     {5, {DOT,  DASH, DASH, DASH, DASH}},  // 1
     {5, {DOT,  DOT,  DASH, DASH, DASH}},  // 2
@@ -38,7 +24,7 @@ const encoded_char_s ENCODED_NUMBERS[10] = {
     {5, {DASH, DASH, DASH, DASH, DOT }}   // 9
 };
 
-const encoded_char_s ENCODED_LETTERS[26] = {
+const encoded_char_t ENCODED_LETTERS[26] = {
     {2, {DOT,  DASH,                 }},  // A
     {4, {DASH, DOT,  DOT,  DOT,      }},  // B
     {4, {DASH, DOT,  DASH, DOT,      }},  // C
@@ -67,67 +53,22 @@ const encoded_char_s ENCODED_LETTERS[26] = {
     {4, {DASH, DASH, DOT,  DOT,      }},  // Z  
 };
 
-extern void set_morse_signal(bool is_on);
-static encoded_char_s encoded_char_sending = {0, {0, 0, 0, 0, 0}}; 
-static uint8_t signal_duration = 0;
+const encoded_char_t ENCODED_NULL_CHAR = {0, {0, 0, 0, 0, 0}};
 
 
-static bool encode_morse_blank(void) {
-    set_morse_signal(false);
-    cycle++;
-    if (cycle >= signal_duration) {
-        cycle = 0;
-    }
-
-    return (cycle > 0);
+/* METHODS */
+void morse_encoder_initialize_(morse_encoder_t* this) {
+    this->buffer[0]            = 0;
+    this->morse_signal_is_on   = false;
+    this->last_char_index      = 0;
+    this->current_char_index   = 0;
+    this->send_char            = false;
+    this->encoded_char_sending = ENCODED_NULL_CHAR;
+    this->step                 = 0;
+    this->signal_duration      = 0;
+    this->cycle                = 0;
 }
 
-static bool encode_morse_data(void) {
-    const uint8_t PART_TO_DURATION[2] = {DOT_NB_OF_CYCLE, DASH_NB_OF_CYCLE};
-
-    
-    if (step < (encoded_char_sending.nb_of_part * 2)) {
-
-        if (!(step & 0x1)) { // even step (signal on)
-            signal_duration = PART_TO_DURATION[encoded_char_sending.char_parts[(step / 2)]];
-            set_morse_signal(true);
-        } else {             // odd step (signal off)
-            signal_duration = SPACE_BETWEEN_PARTS_NB_OF_CYCLE;
-            set_morse_signal(false);
-        }
-
-        cycle++;
-        if (cycle >= signal_duration) {
-            cycle = 0;
-            step++;
-            if (step >= ((encoded_char_sending.nb_of_part * 2) - 1)) {
-                step = 0;
-                encoded_char_sending.nb_of_part = 0;
-            }
-        }
-    }
-
-    return (step < (encoded_char_sending.nb_of_part * 2));
-}
-
-static bool send_char = false;
-
-static bool send_character (char char_to_send) {
-            if ((char_to_send >= '0') && (char_to_send <= '9')) {
-                encoded_char_sending = ENCODED_NUMBERS[char_to_send - '0'];
-            } else if ((char_to_send >= 'A') && (char_to_send <= 'Z')) {
-                encoded_char_sending = ENCODED_LETTERS[char_to_send - 'A'];
-            } else if ((char_to_send >= 'a') && (char_to_send <= 'z')) {
-                encoded_char_sending = ENCODED_LETTERS[char_to_send - 'a'];
-            }
-
-    return encode_morse_data();
-}
-
-#define MESSAGE_BUFFER_SIZE 250
-static char buffer[MESSAGE_BUFFER_SIZE];
-static uint8_t last_char_index = 0;
-static uint8_t current_char_index = 0;
 
 static uint8_t increment_circular_index(uint8_t index, uint8_t size) {
     uint8_t incremented_index = index + 1;
@@ -137,33 +78,87 @@ static uint8_t increment_circular_index(uint8_t index, uint8_t size) {
     return incremented_index;
 }
 
-void push_character(char pushed_char) {
-    buffer[last_char_index] = pushed_char;
-    last_char_index = increment_circular_index(last_char_index, MESSAGE_BUFFER_SIZE);
+
+static bool encode_morse_blank(morse_encoder_t* this) {
+    this->morse_signal_is_on = false;
+    this->cycle++;
+    if (this->cycle >= this->signal_duration) {
+        this->cycle = 0;
+    }
+
+    return (this->cycle > 0);
 }
 
-void encode_morse_message(void) {
+
+static bool encode_morse_data(morse_encoder_t* this) {
+    const uint8_t PART_TO_DURATION[2] = {DOT_NB_OF_CYCLE, DASH_NB_OF_CYCLE};
+
+    
+    if (this->step < (this->encoded_char_sending.nb_of_part * 2)) {
+
+        if (!(this->step & 0x1)) { // even step (signal on)
+            this->signal_duration = PART_TO_DURATION[this->encoded_char_sending.char_parts[(this->step / 2)]];
+            this->morse_signal_is_on = true;
+        } else {             // odd step (signal off)
+            this->signal_duration = SPACE_BETWEEN_PARTS_NB_OF_CYCLE;
+            this->morse_signal_is_on = false;
+        }
+
+        this->cycle++;
+        if (this->cycle >= this->signal_duration) {
+            this->cycle = 0;
+            this->step++;
+            if (this->step >= ((this->encoded_char_sending.nb_of_part * 2) - 1)) {
+                this->step = 0;
+                this->encoded_char_sending.nb_of_part = 0;
+            }
+        }
+    }
+
+    return (this->step < (this->encoded_char_sending.nb_of_part * 2));
+}
+
+
+static bool send_character (morse_encoder_t* this, char char_to_send) {
+            if ((char_to_send >= '0') && (char_to_send <= '9')) {
+                this->encoded_char_sending = ENCODED_NUMBERS[char_to_send - '0'];
+            } else if ((char_to_send >= 'A') && (char_to_send <= 'Z')) {
+                this->encoded_char_sending = ENCODED_LETTERS[char_to_send - 'A'];
+            } else if ((char_to_send >= 'a') && (char_to_send <= 'z')) {
+                this->encoded_char_sending = ENCODED_LETTERS[char_to_send - 'a'];
+            }
+
+    return encode_morse_data(this);
+}
+
+
+void push_character(morse_encoder_t* this, char pushed_char) {
+    this->buffer[this->last_char_index] = pushed_char;
+    this->last_char_index = increment_circular_index(this->last_char_index, MESSAGE_BUFFER_SIZE);
+}
+
+void encode_morse_message(morse_encoder_t* this) {
     bool busy;
-   
-    if (send_char) {
-        busy = send_character(buffer[current_char_index]);
+
+    if (this->send_char) {
+        busy = send_character(this, this->buffer[this->current_char_index]);
     } else {
-        busy = encode_morse_blank();
+        busy = encode_morse_blank(this);
     }
 
     if (!busy) {
-        if (send_char) {
-            send_char = false;
-            current_char_index = increment_circular_index(current_char_index, MESSAGE_BUFFER_SIZE);
-            if (buffer[current_char_index] == ' ') {
-                signal_duration = SPACE_BETWEEN_WORDS_NB_OF_CYCLE;
-                current_char_index = increment_circular_index(current_char_index, MESSAGE_BUFFER_SIZE);
+        if (this->send_char) {
+            this->send_char = false;
+            this->current_char_index = increment_circular_index(this->current_char_index, MESSAGE_BUFFER_SIZE);
+            if (this->buffer[this->current_char_index] == ' ') {
+                this->signal_duration = SPACE_BETWEEN_WORDS_NB_OF_CYCLE;
+                this->current_char_index = increment_circular_index(this->current_char_index, MESSAGE_BUFFER_SIZE);
             } else {
-                signal_duration = SPACE_BETWEEN_LETTERS_NB_OF_CYCLE;
+                this->signal_duration = SPACE_BETWEEN_LETTERS_NB_OF_CYCLE;
              }
         } else {
-            if (current_char_index != last_char_index)
-                send_char = true;
+            if (this->current_char_index != this->last_char_index)
+                this->send_char = true;
         }
     }
 }

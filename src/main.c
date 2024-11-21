@@ -33,7 +33,7 @@ void TIM2_Handler(void);
 int main(void);
 void main_loop(void);
 
-void set_morse_signal(bool is_on);
+static void update_morse_signal(void);
 
 #define RCC_AHB1ENR (*(volatile uint32_t *)0x40023830)
 #define RCC_APB1ENR (*(volatile uint32_t *)0x40023840)
@@ -181,8 +181,10 @@ typedef struct {
   volatile uint32_t AFRL; 
 } gpio_s;
 
-int main(void) {
+morse_encoder_t morse_encoder;
 
+int main(void) {
+ 
 	/* After reset, the CPU clock frequency is 16MHz */
 
 	RCC_AHB1ENR |= (0b1 << 0); // Enable periph clock for GPIOA port
@@ -241,6 +243,8 @@ int main(void) {
     USART2_CR1 = 0x200C;
     USART2_BRR = 0x8B; // 115 107.9
 
+    morse_encoder_initialize_(&morse_encoder);
+
 	while(1) {
 		while (!main_loop_sync_received);
 		main_loop_sync_received = false;
@@ -260,20 +264,27 @@ void main_loop(void) {
 	if (toggle_cycle_counter < (TOGGLE_NB_OF_CYCLE - 1)) {
         toggle_cycle_counter++;
 	} else {
-        //GPIOA.ODR ^= (0b1 << 5);
         USART2_DR = uart_char;
         toggle_cycle_counter = 0;
 	}
     if ((USART2_SR & 0x20) != 0x0) {
         uart_char = USART2_DR;
-        push_character(uart_char);
+        push_character(&morse_encoder, uart_char);
     }
-    encode_morse_message();
+    encode_morse_message(&morse_encoder);
+    update_morse_signal();
 }
 
-void set_morse_signal(bool is_on) {
-    uint32_t data = GPIOA.ODR & ~(0b1 << 5);
-    if (is_on)
-        data |= (0b1 << 5);
-    GPIOA.ODR = data;
+static void update_morse_signal(void) {
+    static bool signal_was_on;
+	bool signal_is_on = morse_signal_to_transmit_is_on(&morse_encoder);
+
+    if (signal_was_on != signal_is_on) {
+        uint32_t data = GPIOA.ODR & ~(0b1 << 5);
+        if (signal_is_on) {
+            data |= (0b1 << 5);
+        }
+        GPIOA.ODR = data;
+        signal_was_on = signal_is_on;
+    }
 }
