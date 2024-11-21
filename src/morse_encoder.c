@@ -1,4 +1,5 @@
 #include "morse_encoder.h"
+#include "util.h"
 
 
 /* CONSTANTS */
@@ -67,15 +68,6 @@ void morse_encoder_initialize_(morse_encoder_t* this) {
     this->step                 = 0;
     this->signal_duration      = 0;
     this->cycle                = 0;
-}
-
-
-static uint8_t increment_circular_index(uint8_t index, uint8_t size) {
-    uint8_t incremented_index = index + 1;
-    if (incremented_index >= size) {
-        incremented_index = 0;
-    }
-    return incremented_index;
 }
 
 
