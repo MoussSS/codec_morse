@@ -11,7 +11,7 @@ set(CMAKE_RANLIB arm-none-eabi-ranlib${CMAKE_EXECUTABLE_SUFFIX})
 set(CMAKE_SIZE arm-none-eabi-size${CMAKE_EXECUTABLE_SUFFIX})
 set(CMAKE_STRIP arm-none-eabi-strip${CMAKE_EXECUTABLE_SUFFIX})
 
-set(CMAKE_C_FLAGS "-mcpu=${CPU} -mfpu=${FPU} -mfloat-abi=${FLOAT_ABI} -mthumb -fdata-sections -ffunction-sections -Wl,--gc-sections")
+set(CMAKE_C_FLAGS "-mthumb -fdata-sections -ffunction-sections -Wl,--gc-sections")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions")
 
 set(CMAKE_C_FLAGS_DEBUG "-Og -g -DDEBUG")

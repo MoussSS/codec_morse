@@ -8,7 +8,7 @@ $ docker run -it --rm -v $(pwd):/home/user/workspace nucleo-f446re-from-scratch
 ## Build the firmware
 On the docker
 ```bash
-$ cmake -B build/<debug or release> -DCMAKE_BUILD_TYPE=<debug or release> # Create workspace
+$ cmake -G Ninja -B build/<debug or release> -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-arm-none-eabi.cmake -DCMAKE_BUILD_TYPE=<debug or release> # Create workspace
 $ cmake --build build/<debug or release> # Build
 $ rm -rf build/<debug or release> # Clean with removing folder
 ```

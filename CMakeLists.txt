@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.19)
 
-project(STM32-FROM-SCRATCH ASM C)
+project(STM32-FROM-SCRATCH C)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -13,7 +13,6 @@ message(NOTICE "Binaries will be available on the following folder: ${CMAKE_RUNT
 
 if(CMAKE_BUILD_TYPE STREQUAL debug OR CMAKE_BUILD_TYPE STREQUAL release)
 	include(cmake/stm32f446retx.cmake)
-	include(cmake/toolchain-arm-none-eabi.cmake)
 	add_subdirectory(src)
 elseif(CMAKE_BUILD_TYPE STREQUAL test)
 	message(NOTICE "All binaries are generating by a native compiler (no cross-compilation).")
