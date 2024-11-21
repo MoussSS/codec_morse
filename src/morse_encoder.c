@@ -1,4 +1,4 @@
-#include "morse.h"
+#include "morse_encoder.h"
 
 
 /* CONSTANTS */

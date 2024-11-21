@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
-#include "morse.h"
+#include "morse_encoder.h"
 
 #define RAM_START 0x20000000u
 #define RAM_SIZE (128u * 1024u) // 128K

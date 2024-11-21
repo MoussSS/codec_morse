@@ -1,5 +1,5 @@
-#ifndef _MORSE_H_
-#define _MORSE_H_
+#ifndef _MORSE_ENCODER_H_
+#define _MORSE_ENCODER_H_
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -41,4 +41,4 @@ inline bool morse_signal_to_transmit_is_on(morse_encoder_t* this) {
     return this->morse_signal_is_on;
 }
 
-#endif
+#endif //_MORSE_ENCODER_H_
