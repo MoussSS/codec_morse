@@ -12,6 +12,8 @@ typedef struct signal_sequence_s {
     uint8_t nb_of_steps;
     uint8_t step_nb_of_cycles[MAX_SEQUENCE_STEPS];
     bool    start_state_is_on;
+    uint8_t step;
+    uint8_t cycle;
 } signal_sequence_t;
 
 typedef struct morse_encoder_s {
@@ -21,9 +23,6 @@ typedef struct morse_encoder_s {
     uint8_t           current_char_index;
     bool              sending_char;
     signal_sequence_t signal_sequence;
-    uint8_t           step;
-    uint8_t           signal_duration;
-    uint8_t           cycle;
 } morse_encoder_t;
 
 

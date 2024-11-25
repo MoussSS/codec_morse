@@ -65,58 +65,73 @@ const encoded_char_t ENCODED_LETTERS[26] = {
     {4, {DASH, DASH, DOT,  DOT,      }},  // Z  
 };
 
-const signal_sequence_t NO_SIGNAL_SEQUENCE = {0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, false};
 const encoded_char_t    ENCODED_NULL_CHAR  = {0, {0, 0, 0, 0, 0}};
+const signal_sequence_t NO_SIGNAL_SEQUENCE = {
+    0,                           // nb_of_steps
+    {0, 0, 0, 0, 0, 0, 0, 0, 0}, // step_nb_of_cycles
+    false,                       // start_state_is_on
+    0,                           // step
+    0,                           // cycle
+};
 
 
 /* PRIVATE METHODS DECLARATIONS */
 static void encode_blank_sequence(signal_sequence_t* sequence, bool is_a_word_separator);
 static void encode_character_sequence(signal_sequence_t* sequence, char char_to_send);
+static bool find_next_alphanumerical_char(morse_encoder_t* this);
 static void run_signal_sequence(morse_encoder_t* this);
 
 
 /* INLINE FUNCTIONS */
+static bool char_is_alphanumerical(char character) {
+    return (
+        ((character >= '0') && (character <= '9')) ||
+        ((character >= 'A') && (character <= 'Z')) || 
+        ((character >= 'a') && (character <= 'z')));
+}
+
+
 static inline bool signal_sequence_is_in_progress(morse_encoder_t* this) {
     return (this->signal_sequence.nb_of_steps > 0);
 }
 
 
 /* PUBLIC METHODS */
-void morse_encoder_initialize_(morse_encoder_t* this) { // TODO nettoyer les champs
+void morse_encoder_initialize_(morse_encoder_t* this) {
     this->buffer[0]          = 0;
     this->morse_signal_is_on = false;
     this->last_char_index    = 0;
     this->current_char_index = 0;
     this->sending_char       = false;
     this->signal_sequence    = NO_SIGNAL_SEQUENCE;
-    this->step               = 0;
-    this->signal_duration    = 0;
-    this->cycle              = 0;
 }
 
 
 void push_character(morse_encoder_t* this, char pushed_char) {
     this->buffer[this->last_char_index] = pushed_char;
     this->last_char_index = increment_circular_index(this->last_char_index, MESSAGE_BUFFER_SIZE);
+    this->buffer[this->last_char_index] = ' '; // Force a long blanck when the last character is reached
 }
 
 
 void encode_morse_message(morse_encoder_t* this) {
-    if (!signal_sequence_is_in_progress(this)) { // TODO commenter (vérifier les cas pourris avec les caractères moisis (retourner un bool pour si c'est pas bon)
-        if (this->sending_char) {    // Was sending the character sequence
+    if (!signal_sequence_is_in_progress(this)) {
+        if (this->sending_char) {
+            // Was sending the character sequence, send the blanck sequence
             this->sending_char = false;
-            this->current_char_index = increment_circular_index(this->current_char_index, MESSAGE_BUFFER_SIZE);
-            if (this->buffer[this->current_char_index] == ' ') {
-                encode_blank_sequence(&this->signal_sequence, true);
-                this->current_char_index = increment_circular_index(this->current_char_index, MESSAGE_BUFFER_SIZE);
-            } else {
+            if (find_next_alphanumerical_char(this)) {
+                // Next character is alphanumerical
                 encode_blank_sequence(&this->signal_sequence, false);
+            } else {
+                // Next character is another character
+                encode_blank_sequence(&this->signal_sequence, true);
              }
-        } else {                     // Was sending the blanck sequence (between characters or words)
+        } else {
+            // Was sending the blanck sequence between characters or words, send the next character
             if (this->current_char_index != this->last_char_index) {
-				encode_character_sequence(&this->signal_sequence, this->buffer[this->current_char_index]);
+                encode_character_sequence(&this->signal_sequence, this->buffer[this->current_char_index]);
                 this->sending_char = true;
-			}
+            }
         }
     }
 	
@@ -163,26 +178,42 @@ static void encode_character_sequence(signal_sequence_t* sequence, char char_to_
 }
 
 
+static bool find_next_alphanumerical_char(morse_encoder_t* this) {
+    bool next_character_is_alphanumerical = true;
+    bool character_is_alphanumerical = false;
+
+    this->current_char_index = increment_circular_index(this->current_char_index, MESSAGE_BUFFER_SIZE);
+    character_is_alphanumerical = char_is_alphanumerical(this->buffer[this->current_char_index]);
+    while ((!character_is_alphanumerical) && (this->current_char_index != this->last_char_index)) {
+        this->current_char_index = increment_circular_index(this->current_char_index, MESSAGE_BUFFER_SIZE);
+        character_is_alphanumerical = char_is_alphanumerical(this->buffer[this->current_char_index]);
+        next_character_is_alphanumerical = false;
+    };
+
+    return next_character_is_alphanumerical;
+}
+
+
 static void run_signal_sequence(morse_encoder_t* this) {
+    signal_sequence_t* sequence = &this->signal_sequence;
 
     // Update signal on new signal step
-    if (this->cycle == 0) {
-        if (this->step == 0) {
-            this->morse_signal_is_on = this->signal_sequence.start_state_is_on;
+    if (sequence->cycle == 0) {
+        if (sequence->step == 0) {
+            this->morse_signal_is_on = sequence->start_state_is_on;
         } else {
 		    this->morse_signal_is_on = !this->morse_signal_is_on;
         }
     }
 
-    this->cycle++;
-    if (this->cycle >= this->signal_sequence.step_nb_of_cycles[this->step]) {
+    sequence->cycle++;
+    if (sequence->cycle >= sequence->step_nb_of_cycles[sequence->step]) {
         // Step is over
-        this->cycle = 0;
-        this->step++;
-        if (this->step >= this->signal_sequence.nb_of_steps) {
-            // Sequence is over
-            this->step = 0;
-            this->signal_sequence = NO_SIGNAL_SEQUENCE;
+        sequence->cycle = 0;
+        sequence->step++;
+        if (sequence->step >= sequence->nb_of_steps) {
+            // Sequence is over (reset)
+            *sequence = NO_SIGNAL_SEQUENCE;
         }
     }
 }
