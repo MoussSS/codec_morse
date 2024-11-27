@@ -38,6 +38,7 @@ static void update_morse_signal(void);
 #define RCC_AHB1ENR (*(volatile uint32_t *)0x40023830)
 #define RCC_APB1ENR (*(volatile uint32_t *)0x40023840)
 #define GPIOA (*(gpio_s*)(0x40020000))
+#define GPIOC (*(gpio_s*)(0x40020800))
 
 #define NVIC_ISER (*(volatile uint32_t *)0xE000E100)
 
@@ -186,9 +187,8 @@ morse_encoder_t morse_encoder;
 int main(void) {
  
 	/* After reset, the CPU clock frequency is 16MHz */
-
-	RCC_AHB1ENR |= (0b1 << 0); // Enable periph clock for GPIOA port
-	RCC_APB1ENR |= (0b1 << 0); // Enable periph clock for TIM2 port
+	RCC_AHB1ENR |= 0x05; // Enable periph clock for GPIOA and GPIOC port
+	RCC_APB1ENR |= 0x01; // Enable periph clock for TIM2 port
 
 	/* GPIO A5 & A6 as Output */
 	GPIOA.MODER &= ~(0b1111 << 10); // Reset configuration mode for pin 5
@@ -206,16 +206,30 @@ int main(void) {
 	/* GPIO A5 & A6 set to 0 */
 	GPIOA.ODR &= ~(0b11 << 5);
 
-	/* GPIOA5 set to 1 */
-	//GPIOA.ODR |= (0b1 << 5);
+    /* GPIO C7 and C13 as Input */
+    GPIOC.MODER &= ~(0b11 << (2 * 7));
+    GPIOC.MODER &= ~(0b11 << (2 * 13));
+
+    /* GPIO C7 & C13 on Push-Pull */
+    GPIOC.OTYPER &= ~(0b1 << 7);
+    GPIOC.OTYPER &= ~(0b1 << 13);
+
+    /* GPIO C7 & C13 on Low speed */
+    GPIOC.OSPEEDR &= ~(0b11 << (2 * 7));
+    GPIOC.OSPEEDR &= ~(0b11 << (2 * 13));
+
+    /* GPIO C7 & C13 on No pull-up/pull-down */
+    GPIOC.PUPDR &= ~(0b11 << (2 * 7));
+    GPIOC.PUPDR &= ~(0b11 << (2 * 13));
+
+    /* Read C7 and C13 values */
+    //GPIOC.ODR &= ~(0b11 << 5);
 
 	/* Set prescaler on 16 bits */
 	TIM2_PSC = 80 - 1; /* Ticks timer at 5 µs */
 
 	/* Set auto-reload */
 	TIM2_ARR = 2000 - 1; // 2000 * 5 µs => 10 ms
-
-	//TIM2_SMCR = 0x0; Default value so not needed
 
     //Enable timer interrupt
     TIM2_DIER = 0x01;
@@ -258,19 +272,28 @@ int main(void) {
 static uint16_t toggle_cycle_counter = 0;
 #define TOGGLE_NB_OF_CYCLE 25
 static char uart_char = 'a';
+static bool morse_input = false;
 
 /* Main loop (100Hz) */
 void main_loop(void) {
+	
 	if (toggle_cycle_counter < (TOGGLE_NB_OF_CYCLE - 1)) {
         toggle_cycle_counter++;
 	} else {
-        USART2_DR = uart_char;
+        if (morse_input)
+            USART2_DR = '1';
+        else
+            USART2_DR = '0';
         toggle_cycle_counter = 0;
 	}
+    morse_input = (GPIOC.IDR & (0b1 << 7));
+	
+    // If a character is received
     if ((USART2_SR & 0x20) != 0x0) {
         uart_char = USART2_DR;
         push_character(&morse_encoder, uart_char);
     }
+
     encode_morse_message(&morse_encoder);
     update_morse_signal();
 }
