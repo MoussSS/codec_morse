@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include "morse_decoder.h"
 #include "morse_encoder.h"
 
 #define RAM_START 0x20000000u
@@ -183,6 +184,7 @@ typedef struct {
 } gpio_s;
 
 morse_encoder_t morse_encoder;
+morse_decoder_t morse_decoder;
 
 int main(void) {
  
@@ -287,6 +289,7 @@ void main_loop(void) {
         toggle_cycle_counter = 0;
 	}
     morse_input = (GPIOC.IDR & (0b1 << 7));
+    decode_morse_signal(&morse_decoder, morse_input);
 	
     // If a character is received
     if ((USART2_SR & 0x20) != 0x0) {

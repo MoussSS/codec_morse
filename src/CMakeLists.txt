@@ -5,6 +5,7 @@ add_executable(${BUILD_TARGET})
 target_sources(${BUILD_TARGET} PRIVATE
     main.c
     morse_encoder.c
+    morse_decoder.c
     util.c
 )
 
