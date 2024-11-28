@@ -282,15 +282,9 @@ void main_loop(void) {
 	if (toggle_cycle_counter < (TOGGLE_NB_OF_CYCLE - 1)) {
         toggle_cycle_counter++;
 	} else {
-        if (morse_input)
-            USART2_DR = '1';
-        else
-            USART2_DR = '0';
         toggle_cycle_counter = 0;
 	}
     morse_input = (GPIOC.IDR & (0b1 << 7));
-    decode_morse_signal(&morse_decoder, morse_input);
-	
     // If a character is received
     if ((USART2_SR & 0x20) != 0x0) {
         uart_char = USART2_DR;
@@ -299,6 +293,11 @@ void main_loop(void) {
 
     encode_morse_message(&morse_encoder);
     update_morse_signal();
+    decode_morse_signal(&morse_decoder, morse_input);
+    uart_char = get_decoded_character(&morse_decoder);
+    if (uart_char != 0)
+        USART2_DR = uart_char;
+	
 }
 
 static void update_morse_signal(void) {
