@@ -5,8 +5,6 @@
 /* CONSTANTS AND TYPES */
 #define MAX_DURATION_TO_RECORD 1000 // 10s max
 
-static const uint8_t MORSE_REFERENCE_NB_OF_CYCLE = MORSE_REFERENCE_DURATION_MS / TIME_TO_CYCLE_FACTOR;
-
 
 /* PRIVATE METHODS DECLARATIONS */
 static void decode_blank(morse_decoder_t* this);
@@ -29,11 +27,12 @@ static inline bool is_receiving_an_off_signal(morse_decoder_t* this) {
 
 
 /* PUBLIC METHODS */
-void morse_decoder_initialize_(morse_decoder_t* this) {
+void morse_decoder_initialize(morse_decoder_t* this) {
     this->signal_is_on               = false;
     this->recording_index            = 0;
     this->signal_duration_records[0] = 0;
     this->decoding_index             = 0;
+    this->reference_duration         = 15;
     this->decoded_character          = 0;
     this->additional_character       = 0;
 }
@@ -65,13 +64,13 @@ static void decode_blank(morse_decoder_t* this) {
     this->decoded_character = 0;
     
     if (new_decoding_index == this->recording_index) {
-        if (this->signal_duration_records[new_decoding_index] > (10 * MORSE_REFERENCE_NB_OF_CYCLE)) {
+        if (this->signal_duration_records[new_decoding_index] > (10 * this->reference_duration)) {
             this->decoded_character = '\n';
             this->additional_character = '\r';
             this->decoding_index = new_decoding_index;
         }
     } else {
-        if (this->signal_duration_records[new_decoding_index] > (5 * MORSE_REFERENCE_NB_OF_CYCLE))
+        if (this->signal_duration_records[new_decoding_index] > (5 * this->reference_duration))
             this->decoded_character = ' ';
         this->decoding_index = new_decoding_index;
     }
@@ -84,7 +83,7 @@ static void decode_character(morse_decoder_t* this) {
 
     do {
         new_decoding_index = increment_circular_index(new_decoding_index, NB_OF_SIGNAL_CHANGES_TO_RECORD);
-        if (this->signal_duration_records[new_decoding_index] > (2 * MORSE_REFERENCE_NB_OF_CYCLE)) {
+        if (this->signal_duration_records[new_decoding_index] > (2 * this->reference_duration)) {
             encoded_char.char_parts[encoded_char.nb_of_part] = DASH;
         } else {
             encoded_char.char_parts[encoded_char.nb_of_part] = DOT;
@@ -161,7 +160,7 @@ static void decode_signal(morse_decoder_t* this) {
         if (this->recording_index != this->decoding_index) {
             if (is_decoding_a_character(this)) {
                 if (is_receiving_an_off_signal(this) &&
-                (this->signal_duration_records[this->recording_index] > (2 * MORSE_REFERENCE_NB_OF_CYCLE)))
+                (this->signal_duration_records[this->recording_index] > (2 * this->reference_duration)))
                     decode_character(this);
             } else {
                 decode_blank(this);

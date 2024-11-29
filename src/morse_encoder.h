@@ -26,7 +26,7 @@ typedef struct morse_encoder_s {
 } morse_encoder_t;
 
 
-void morse_encoder_initialize_(morse_encoder_t* this);
+void morse_encoder_initialize(morse_encoder_t* this);
 void push_character(morse_encoder_t* this, char pushed_char);
 void encode_morse_message(morse_encoder_t* this);
 

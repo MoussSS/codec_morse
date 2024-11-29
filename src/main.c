@@ -259,7 +259,9 @@ int main(void) {
     USART2_CR1 = 0x200C;
     USART2_BRR = 0x8B; // 115 107.9
 
-    morse_encoder_initialize_(&morse_encoder);
+    morse_encoder_initialize(&morse_encoder);
+    morse_decoder_initialize(&morse_decoder);
+
 
 	while(1) {
 		while (!main_loop_sync_received);

@@ -41,7 +41,7 @@ static inline bool signal_sequence_is_in_progress(morse_encoder_t* this) {
 
 
 /* PUBLIC METHODS */
-void morse_encoder_initialize_(morse_encoder_t* this) {
+void morse_encoder_initialize(morse_encoder_t* this) {
     this->buffer[0]          = 0;
     this->morse_signal_is_on = false;
     this->last_char_index    = 0;
